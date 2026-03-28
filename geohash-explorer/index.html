@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Interactive geohash encoding visualizer — step through the bisection algorithm bit-by-bit on a live world map.">
+  <meta property="og:title" content="Geohash Explorer">
+  <meta property="og:description" content="Step through the geohash bisection algorithm on a live world map. Watch any location get encoded bit-by-bit into its compact string.">
+  <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f0f2f5" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+  <title>Geohash Explorer — Interactive Encoding Visualizer</title>
+  <style>
+    /* ── Design tokens ───────────────────────────────────────────────── */
+    :root {
+      --color-page-bg:             #0d1117;
+      --color-tool-bg:             #0d1117;
+
+      --color-background-info:     #1e3a5f;
+      --color-text-info:           #60a5fa;
+      --color-border-info:         #2563eb;
+
+      --color-background-warning:  #3d2c08;
+      --color-text-warning:        #fbbf24;
+      --color-border-warning:      #d97706;
+
+      --color-background-secondary:#161b22;
+      --color-border-secondary:    rgba(56, 139, 253, 0.25);
+      --color-border-tertiary:     #30363d;
+
+      --color-text-primary:        #e6edf3;
+      --color-text-secondary:      #8b949e;
+      --color-text-tertiary:       #484f58;
+
+      --color-accent:              #388bfd;
+      --color-accent-hover:        #58a6ff;
+
+      --font-mono: 'ui-monospace', 'SFMono-Regular', 'Cascadia Code',
+                   'Fira Code', 'Menlo', 'Consolas', monospace;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --color-page-bg:             #f0f2f5;
+        --color-tool-bg:             #ffffff;
+
+        --color-background-info:     #dbeafe;
+        --color-text-info:           #1d4ed8;
+        --color-border-info:         #93c5fd;
+
+        --color-background-warning:  #fef3c7;
+        --color-text-warning:        #b45309;
+        --color-border-warning:      #fcd34d;
+
+        --color-background-secondary:#f6f8fa;
+        --color-border-secondary:    rgba(29, 78, 216, 0.25);
+        --color-border-tertiary:     #d0d7de;
+
+        --color-text-primary:        #1f2328;
+        --color-text-secondary:      #656d76;
+        --color-text-tertiary:       #b1bac4;
+
+        --color-accent:              #0969da;
+        --color-accent-hover:        #0550ae;
+      }
+    }
+
+    /* ── Reset ───────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Base ────────────────────────────────────────────────────────── */
+    html { font-size: 16px; }
+
+    body {
+      background: var(--color-page-bg);
+      color: var(--color-text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans',
+                   Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      min-height: 100dvh;
+      padding: 32px 16px 56px;
+      transition: background 200ms;
+    }
+
+    /* ── Page header ─────────────────────────────────────────────────── */
+    .page-header {
+      max-width: 860px;
+      margin: 0 auto 24px;
+      padding: 0 4px;
+    }
+
+    .page-header__eyebrow {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 8px;
+    }
+
+    .page-header__title {
+      font-size: clamp(24px, 5vw, 34px);
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      line-height: 1.2;
+      color: var(--color-text-primary);
+      margin-bottom: 10px;
+    }
+
+    .page-header__title .accent { color: var(--color-accent); }
+
+    .page-header__subtitle {
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      max-width: 620px;
+      line-height: 1.65;
+    }
+
+    /* ── Tool container ──────────────────────────────────────────────── */
+    .tool-container {
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--color-tool-bg);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    @media (max-width: 580px) {
+      .tool-container { padding: 14px; }
+    }
+
+    /* ── Footer ──────────────────────────────────────────────────────── */
+    .page-footer {
+      max-width: 860px;
+      margin: 20px auto 0;
+      padding: 0 4px;
+      font-size: 12px;
+      color: var(--color-text-tertiary);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .page-footer a {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: color 120ms;
+    }
+
+    .page-footer a:hover { color: var(--color-accent); }
+
+    /* ── Buttons ─────────────────────────────────────────────────────── */
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      line-height: 20px;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid var(--color-border-tertiary);
+      background: #21262d;
+      color: var(--color-text-primary);
+      transition: background 120ms ease, border-color 120ms ease,
+                  color 120ms ease, box-shadow 120ms ease;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    button:hover {
+      background: #30363d;
+      border-color: #8b949e;
+    }
+
+    button:active {
+      background: #1c2128;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    /* Play/Pause accent */
+    button#gpb {
+      background: rgba(56, 139, 253, 0.12);
+      border-color: rgba(56, 139, 253, 0.5);
+      color: #79c0ff;
+    }
+
+    button#gpb:hover {
+      background: rgba(56, 139, 253, 0.2);
+      border-color: var(--color-accent);
+    }
+
+    @media (prefers-color-scheme: light) {
+      button {
+        background: #f6f8fa;
+        border-color: #d0d7de;
+        color: #24292f;
+      }
+
+      button:hover {
+        background: #eaeef2;
+        border-color: #8c959f;
+      }
+
+      button:active {
+        background: #e0e3e6;
+      }
+
+      button#gpb {
+        background: #dbeafe;
+        border-color: #93c5fd;
+        color: #1d4ed8;
+      }
+
+      button#gpb:hover {
+        background: #bfdbfe;
+        border-color: #60a5fa;
+      }
+    }
+
+    /* ── Number inputs ───────────────────────────────────────────────── */
+    input[type="number"] {
+      padding: 5px 8px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      border-radius: 6px;
+      border: 1px solid var(--color-border-tertiary);
+      background: #010409;
+      color: var(--color-text-primary);
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 0.4; }
+
+    input[type="number"]:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.2);
+    }
+
+    @media (prefers-color-scheme: light) {
+      input[type="number"] {
+        background: #ffffff;
+        border-color: #d0d7de;
+        color: #24292f;
+      }
+
+      input[type="number"]:focus {
+        box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
+      }
+    }
+
+    /* ── Range slider ────────────────────────────────────────────────── */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--color-border-tertiary);
+      cursor: pointer;
+      outline: none;
+      vertical-align: middle;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      border: 2px solid var(--color-tool-bg);
+      box-shadow: 0 0 5px rgba(56, 139, 253, 0.5);
+      cursor: pointer;
+      transition: background 120ms, transform 120ms;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background: var(--color-accent-hover);
+      transform: scale(1.1);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      border: 2px solid var(--color-tool-bg);
+      cursor: pointer;
+    }
+
+    /* ── Step info box ───────────────────────────────────────────────── */
+    #gsi {
+      background: var(--color-background-secondary);
+    }
+
+    /* ── Scrollbar (dark mode) ───────────────────────────────────────── */
+    @media (prefers-color-scheme: dark) {
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #0d1117; }
+      ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+    }
+
+    /* ── Original fragment styles (preserved) ────────────────────────── */
+    .b{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--font-mono);border:0.5px solid transparent;transition:all .15s;flex-shrink:0}
+    .bl{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+    .bw{background:var(--color-background-warning);color:var(--color-text-warning);border-color:var(--color-border-warning)}
+    .bp{background:var(--color-background-secondary);color:var(--color-text-tertiary);border-color:var(--color-border-tertiary)}
+    .bc{outline:2px solid var(--color-text-primary);outline-offset:1px}
+    .fc{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:8px 12px;font-size:12px;flex:1;min-width:90px;text-align:center}
+    #mc{display:block;width:100%;border:0.5px solid var(--color-border-tertiary);border-radius:8px}
+    code{font-family:var(--font-mono);font-size:12px;background:var(--color-background-secondary);padding:1px 5px;border-radius:4px}
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <div class="page-header__eyebrow">Study Tool</div>
+    <h1 class="page-header__title"><span class="accent">Geo</span>hash Explorer</h1>
+    <p class="page-header__subtitle">
+      Pick any city or enter coordinates and watch the bisection algorithm
+      encode the location bit-by-bit into its compact geohash string —
+      one map cut at a time.
+    </p>
+  </header>
+
+  <main>
+    <div class="tool-container">
+
+      <div style="padding-bottom:16px;margin-bottom:16px;border-bottom:0.5px solid var(--color-border-tertiary)">
+        <div style="font-size:15px;font-weight:500;margin-bottom:10px">What is a Geohash?</div>
+        <p style="font-size:13px;color:var(--color-text-secondary);margin:0 0 12px;line-height:1.7">
+          A geohash like <code>9q8y</code> encodes any location on Earth as a short string.
+          The map is repeatedly cut in half — first <span style="color:var(--color-text-info);font-weight:500">east/west</span> (longitude),
+          then <span style="color:var(--color-text-warning);font-weight:500">north/south</span> (latitude), alternating each time.
+          Each cut produces one bit: <strong>1</strong> if the location is in the right/upper half, <strong>0</strong> if left/lower.
+          Every <strong>5 bits</strong> are converted to a single character using a 32-symbol alphabet.
+          More characters = smaller cell = higher accuracy.
+        </p>
+        <div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
+          <div class="fc"><div style="font-weight:500;margin-bottom:4px">① Bisect</div><div style="color:var(--color-text-secondary)">Cut current cell in half, alternating lon/lat</div></div>
+          <div style="display:flex;align-items:center;color:var(--color-text-tertiary);padding:0 2px">→</div>
+          <div class="fc"><div style="font-weight:500;margin-bottom:4px">② Record bit</div><div style="color:var(--color-text-secondary)">1 = right/upper<br>0 = left/lower</div></div>
+          <div style="display:flex;align-items:center;color:var(--color-text-tertiary);padding:0 2px">→</div>
+          <div class="fc"><div style="font-weight:500;margin-bottom:4px">③ Repeat × 5</div><div style="color:var(--color-text-secondary)">5 bits = 32 possible values = 1 character</div></div>
+          <div style="display:flex;align-items:center;color:var(--color-text-tertiary);padding:0 2px">→</div>
+          <div class="fc" style="border-color:var(--color-border-secondary)"><div style="font-family:var(--font-mono);font-size:18px;font-weight:500;letter-spacing:3px;margin-bottom:4px">9q8y</div><div style="color:var(--color-text-secondary)">4 chars = 20 bits ≈ 40 km cell</div></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button onclick="sp(37.7749,-122.4194,'San Francisco')">San Francisco</button>
+        <button onclick="sp(51.5074,-0.1278,'London')">London</button>
+        <button onclick="sp(35.6762,139.6503,'Tokyo')">Tokyo</button>
+        <button onclick="sp(-33.8688,151.2093,'Sydney')">Sydney</button>
+        <button onclick="sp(40.7128,-74.006,'New York')">New York</button>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <label style="font-size:13px;color:var(--color-text-secondary)">Lat</label>
+        <input id="glat" type="number" value="37.7749" step="0.001" style="width:88px">
+        <label style="font-size:13px;color:var(--color-text-secondary)">Lon</label>
+        <input id="glon" type="number" value="-122.4194" step="0.001" style="width:88px">
+        <label style="font-size:13px;color:var(--color-text-secondary)">Chars</label>
+        <input type="range" id="gprec" min="1" max="6" value="4" oninput="document.getElementById('gpv').textContent=this.value" style="width:70px">
+        <span id="gpv" style="font-size:13px;font-weight:500;min-width:12px">4</span>
+        <button onclick="calc()">Encode</button>
+      </div>
+
+      <div style="position:relative">
+        <canvas id="mc"></canvas>
+        <div id="mload" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--color-text-secondary);pointer-events:none;border-radius:8px">Loading world map...</div>
+      </div>
+
+      <div style="margin:12px 0 4px;font-size:12px;color:var(--color-text-secondary);display:flex;gap:20px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:5px"><span class="b bl" style="width:14px;height:14px;border-radius:3px;flex-shrink:0"></span> Longitude bit — east/west cut (vertical line on map)</span>
+        <span style="display:flex;align-items:center;gap:5px"><span class="b bw" style="width:14px;height:14px;border-radius:3px;flex-shrink:0"></span> Latitude bit — north/south cut (horizontal line on map)</span>
+      </div>
+
+      <div style="margin:10px 0 0">
+        <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px">Encoding progress — each group of 5 bits produces one character:</div>
+        <div id="gbs" style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap"></div>
+        <div id="gbl" style="font-size:11px;color:var(--color-text-secondary);margin-top:5px;line-height:1.8"></div>
+      </div>
+
+      <div id="gsi" style="border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;margin:14px 0 12px;min-height:110px"></div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <button onclick="go(cur-1)">← Prev</button>
+        <span id="gsl" style="flex:1;text-align:center;font-size:13px;color:var(--color-text-secondary)"></span>
+        <button onclick="go(cur+1)">Next →</button>
+        <button id="gpb" onclick="tplay()">Play</button>
+      </div>
+
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-size:13px;color:var(--color-text-secondary)">Result</span>
+        <span id="grh" style="font-family:var(--font-mono);font-size:22px;font-weight:500;letter-spacing:4px"></span>
+        <span id="grd" style="font-size:12px;color:var(--color-text-secondary)"></span>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <span>Built with D3.js + TopoJSON</span>
+    <a href="https://en.wikipedia.org/wiki/Geohash" target="_blank" rel="noopener">What is a geohash? (Wikipedia)</a>
+    <a href="https://github.com/davidmoten/geo" target="_blank" rel="noopener">geohash libraries</a>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+  <script>
+  const B32='0123456789bcdefghjkmnpqrstuvwxyz';
+  let steps=[],cur=-1,lat=37.7749,lon=-122.4194,prec=4,pit=null,cityName='San Francisco';
+  let worldLand=null,worldBorders=null,mapReady=false;
+  const mc=document.getElementById('mc');
+  const ctx=mc.getContext('2d');
+
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+    .then(r=>r.json()).then(topo=>{
+      worldLand=topojson.feature(topo,topo.objects.land);
+      worldBorders=topojson.mesh(topo,topo.objects.countries,(a,b)=>a!==b);
+      mapReady=true;
+      document.getElementById('mload').style.display='none';
+      dm(cur);
+    }).catch(()=>{document.getElementById('mload').style.display='none';dm(cur);});
+
+  function sp(la,lo,nm){lat=la;lon=lo;cityName=nm;document.getElementById('glat').value=la;document.getElementById('glon').value=lo;calc();}
+
+  function csteps(la,lo,pr){
+    const r=[];let lnmn=-180,lnmx=180,lamn=-90,lamx=90;
+    for(let i=0;i<pr*5;i++){
+      const il=i%2===0;let mid,bit,pmn,pmx;
+      if(il){pmn=lnmn;pmx=lnmx;mid=(lnmn+lnmx)/2;bit=lo>=mid?1:0;if(bit)lnmn=mid;else lnmx=mid;}
+      else{pmn=lamn;pmx=lamx;mid=(lamn+lamx)/2;bit=la>=mid?1:0;if(bit)lamn=mid;else lamx=mid;}
+      r.push({il,mid,bit,pmn,pmx,cell:{lnmn,lnmx,lamn,lamx}});
+    }
+    return r;
+  }
+
+  function dm(si){
+    const W=mc.clientWidth||600,H=Math.round(W/2);
+    mc.width=W;mc.height=H;
+    const dk=matchMedia('(prefers-color-scheme:dark)').matches;
+    const tx=lo=>(lo+180)/360*W,ty=la=>(90-la)/180*H;
+    ctx.fillStyle=dk?'#0e2236':'#6ab8e0';ctx.fillRect(0,0,W,H);
+    if(mapReady&&worldLand){
+      const proj=d3.geoEquirectangular().scale(W/(2*Math.PI)).translate([W/2,H/2]);
+      const path=d3.geoPath(proj,ctx);
+      ctx.fillStyle=dk?'#3a6030':'#8ab860';
+      ctx.beginPath();path(worldLand);ctx.fill();
+      ctx.strokeStyle=dk?'rgba(20,45,12,0.55)':'rgba(255,255,255,0.55)';
+      ctx.lineWidth=0.4;ctx.beginPath();path(worldBorders);ctx.stroke();
+    } else {
+      ctx.fillStyle=dk?'#3a6030':'#8ab860';
+      [[-165,72,-52,15],[-82,13,-34,-56],[-12,71,42,34],[-18,38,52,-36],[26,78,145,1],[113,-11,154,-44]]
+      .forEach(([x1,y1,x2,y2])=>ctx.fillRect(tx(x1),ty(y1),tx(x2)-tx(x1),ty(y2)-ty(y1)));
+    }
+    ctx.strokeStyle=dk?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.1)';
+    ctx.lineWidth=0.5;ctx.setLineDash([]);
+    for(let g=-180;g<=180;g+=30){ctx.beginPath();ctx.moveTo(tx(g),0);ctx.lineTo(tx(g),H);ctx.stroke();}
+    for(let g=-90;g<=90;g+=30){ctx.beginPath();ctx.moveTo(0,ty(g));ctx.lineTo(W,ty(g));ctx.stroke();}
+    ctx.strokeStyle=dk?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.18)';ctx.lineWidth=0.8;
+    ctx.beginPath();ctx.moveTo(0,ty(0));ctx.lineTo(W,ty(0));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(tx(0),0);ctx.lineTo(tx(0),H);ctx.stroke();
+    if(si>=0&&si<steps.length){
+      const {lnmn,lnmx,lamn,lamx}=steps[si].cell;
+      const cx=tx(lnmn),cy=ty(lamx),cw=tx(lnmx)-cx,ch=ty(lamn)-cy;
+      ctx.fillStyle=dk?'rgba(56,139,220,0.28)':'rgba(24,95,165,0.18)';ctx.fillRect(cx,cy,cw,ch);
+      ctx.strokeStyle=dk?'#6aaae8':'#185fa5';ctx.lineWidth=2;ctx.strokeRect(cx,cy,cw,ch);
+      const s=steps[si],pc=si>0?steps[si-1].cell:{lnmn:-180,lnmx:180,lamn:-90,lamx:90};
+      ctx.strokeStyle=dk?'rgba(239,159,39,0.9)':'rgba(186,117,23,0.9)';
+      ctx.lineWidth=1.2;ctx.setLineDash([5,3]);ctx.beginPath();
+      if(s.il){ctx.moveTo(tx(s.mid),ty(pc.lamx));ctx.lineTo(tx(s.mid),ty(pc.lamn));}
+      else{ctx.moveTo(tx(pc.lnmn),ty(s.mid));ctx.lineTo(tx(pc.lnmx),ty(s.mid));}
+      ctx.stroke();ctx.setLineDash([]);
+    }
+    const px=tx(lon),py=ty(lat);
+    ctx.fillStyle=dk?'#ef9f27':'#c47d10';
+    ctx.beginPath();ctx.arc(px,py,5.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=dk?'#0e2236':'#6ab8e0';ctx.lineWidth=1.5;ctx.stroke();
+  }
+
+  function ubs(){
+    const c=document.getElementById('gbs'),lbl=document.getElementById('gbl');
+    if(!steps.length){c.innerHTML='';lbl.innerHTML='';return;}
+    let h='',lblParts=[];
+    for(let ci=0;ci<prec;ci++){
+      if(ci>0)h+='<div style="width:1px;height:28px;background:var(--color-border-secondary);margin:0 4px;flex-shrink:0"></div>';
+      h+='<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><div style="display:flex;gap:3px">';
+      let val=0;
+      for(let b=0;b<5;b++){
+        const bi=ci*5+b,s=steps[bi],done=bi<=cur,active=bi===cur;
+        h+=`<div class="b ${done?(s.il?'bl':'bw'):'bp'}${active?' bc':''}" title="bit ${bi+1}: ${s.il?'longitude':'latitude'}">${done?s.bit:'·'}</div>`;
+        if(done)val=(val<<1)|s.bit;
+      }
+      const rdy=ci*5+4<=cur;
+      h+=`</div><span style="font-family:var(--font-mono);font-size:14px;font-weight:500;color:${rdy?'var(--color-text-primary)':'var(--color-text-tertiary)'}">${rdy?B32[val]:'_'}</span></div>`;
+      if(rdy){
+        const bstr=steps.slice(ci*5,ci*5+5).map(s=>s.bit).join('');
+        lblParts.push(`<code>${bstr}</code> = ${val} → <strong style="font-family:var(--font-mono)">'${B32[val]}'</strong>`);
+      }
+    }
+    c.innerHTML=h;
+    lbl.innerHTML=lblParts.length?'Completed characters: '+lblParts.join(' &nbsp;|&nbsp; '):'';
+  }
+
+  function cellKm(c){
+    const lkm=(c.lamx-c.lamn)*111,lokm=(c.lnmx-c.lnmn)*111*Math.cos(lat*Math.PI/180);
+    const km=Math.min(lkm,lokm);
+    return km>500?`~${Math.round(km/100)*100} km`:km>50?`~${Math.round(km/10)*10} km`:km>5?`~${Math.round(km)} km`:`~${Math.round(km*1000)} m`;
+  }
+
+  function finalHash(){
+    let h='';
+    for(let ci=0;ci<prec;ci++){let v=0;for(let b=0;b<5;b++)v=(v<<1)|steps[ci*5+b].bit;h+=B32[v];}
+    return h;
+  }
+
+  function usi(){
+    const el=document.getElementById('gsi'),sl=document.getElementById('gsl');
+    const tot=steps.length;
+
+    if(cur<0){
+      el.innerHTML=`
+  <div style="font-weight:500;margin-bottom:8px">Ready to encode ${cityName}</div>
+  <p style="margin:0 0 6px;color:var(--color-text-secondary)">Coordinates: <strong style="color:var(--color-text-primary)">lat ${lat.toFixed(4)}°, lon ${lon.toFixed(4)}°</strong></p>
+  <p style="margin:0 0 6px;color:var(--color-text-secondary)">We need <strong style="color:var(--color-text-primary)">${tot} bits total</strong> (${prec} characters × 5 bits each). The bits alternate: odd-numbered bits encode <span style="color:var(--color-text-info);font-weight:500">longitude</span> (east/west cuts), even-numbered bits encode <span style="color:var(--color-text-warning);font-weight:500">latitude</span> (north/south cuts).</p>
+  <p style="margin:0;color:var(--color-text-secondary)">The amber dot on the map marks the location. The blue highlighted cell shrinks with each step as the encoding narrows in. Press <strong>Next →</strong> to begin, or <strong>Play</strong> to watch it run automatically.</p>`;
+      sl.textContent=`0 of ${tot} bits encoded`;
+      return;
+    }
+
+    const s=steps[cur],bn=cur+1,ci=Math.floor(cur/5),bic=(cur%5)+1;
+    const type=s.il?'longitude':'latitude',cutDir=s.il?'vertically (east/west)':'horizontally (north/south)';
+    const halfName=s.bit?(s.il?'RIGHT — east':'UPPER — north'):(s.il?'LEFT — west':'LOWER — south');
+    const coordStr=s.il?`lon ${lon.toFixed(4)}°`:`lat ${lat.toFixed(4)}°`;
+    const ineq=s.bit?'≥':'<';
+    const newMn=s.bit?s.mid:s.pmn,newMx=s.bit?s.pmx:s.mid;
+    const bitsLeft=5-bic;
+
+    let charDoneHtml='';
+    if(bic===5){
+      let val=0;
+      for(let b=0;b<5;b++)val=(val<<1)|steps[ci*5+b].bit;
+      const bstr=steps.slice(ci*5,ci*5+5).map(x=>x.bit).join('');
+      charDoneHtml=`<div style="margin-top:10px;padding:9px 12px;background:var(--color-background-secondary);border-radius:6px;font-size:13px">
+    <strong>Character ${ci+1} complete.</strong> The 5 bits <code>${bstr}</code> equal <strong>${val}</strong> in decimal. Looking up index ${val} in the Base32 alphabet gives <strong style="font-family:var(--font-mono);font-size:16px">'${B32[val]}'</strong>.
+  </div>`;
+    }
+
+    let allDoneHtml='';
+    if(cur===tot-1){
+      allDoneHtml=`<div style="margin-top:10px;padding:9px 12px;border:0.5px solid var(--color-border-tertiary);border-radius:6px;font-size:13px;color:var(--color-text-secondary)">
+    All ${tot} bits encoded. The blue cell is now roughly ${cellKm(steps[cur].cell)} across — that's the location accuracy this geohash provides. The complete hash is <strong style="font-family:var(--font-mono);font-size:15px;color:var(--color-text-primary)">${finalHash()}</strong>.
+  </div>`;
+    }
+
+    el.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+    <span style="font-weight:500">Bit ${bn} of ${tot} — <span style="color:${s.il?'var(--color-text-info)':'var(--color-text-warning)'}">${type}</span> cut</span>
+    <span style="font-size:12px;color:var(--color-text-secondary)">character ${ci+1}, bit ${bic}/5</span>
+  </div>
+  <p style="margin:0 0 6px;color:var(--color-text-secondary)">The current cell is sliced <strong style="color:var(--color-text-primary)">${cutDir}</strong>. The <span style="color:${s.il?'var(--color-text-info)':'var(--color-text-warning)'};font-weight:500">${type}</span> range is [${s.pmn.toFixed(3)}°, ${s.pmx.toFixed(3)}°] — the midpoint is <strong style="color:var(--color-text-primary)">${s.mid.toFixed(3)}°</strong>. This is the dashed amber line on the map.</p>
+  <p style="margin:0 0 6px;color:var(--color-text-secondary)"><strong style="color:var(--color-text-primary)">${coordStr}</strong> is ${ineq} ${s.mid.toFixed(3)}°, so it falls in the <strong style="color:${s.il?'var(--color-text-info)':'var(--color-text-warning)'}">${halfName}</strong> half. We record bit = <strong style="font-family:var(--font-mono);font-size:15px;color:var(--color-text-primary)">${s.bit}</strong>. The blue cell updates to [${newMn.toFixed(3)}°, ${newMx.toFixed(3)}°].</p>
+  <p style="margin:0;font-size:12px;color:var(--color-text-secondary)">${bitsLeft>0?`${bitsLeft} more bit${bitsLeft>1?'s':''} needed to complete character ${ci+1}.`:`All 5 bits for character ${ci+1} are now known.`}</p>
+  ${charDoneHtml}${allDoneHtml}`;
+    sl.textContent=`${bn} of ${tot} bits encoded`;
+  }
+
+  function ures(){
+    let hash='';
+    for(let ci=0;ci<prec;ci++){
+      if(ci*5+4>cur){hash+='_';continue;}
+      let v=0;for(let b=0;b<5;b++)v=(v<<1)|steps[ci*5+b].bit;hash+=B32[v];
+    }
+    document.getElementById('grh').textContent=hash;
+    document.getElementById('grd').textContent=cur===steps.length-1?`(${cellKm(steps[cur].cell)} accuracy)`:'';
+  }
+
+  function go(i){cur=Math.max(-1,Math.min(steps.length-1,i));dm(cur);ubs();usi();ures();}
+
+  function calc(){
+    lat=parseFloat(document.getElementById('glat').value)||0;
+    lon=parseFloat(document.getElementById('glon').value)||0;
+    prec=parseInt(document.getElementById('gprec').value)||4;
+    lat=Math.max(-90,Math.min(90,lat));lon=Math.max(-180,Math.min(180,lon));
+    if(pit){clearInterval(pit);pit=null;document.getElementById('gpb').textContent='Play';}
+    steps=csteps(lat,lon,prec);cur=-1;dm(-1);ubs();usi();ures();
+  }
+
+  function tplay(){
+    const btn=document.getElementById('gpb');
+    if(pit){clearInterval(pit);pit=null;btn.textContent='Play';}
+    else{
+      if(cur>=steps.length-1)go(-1);
+      btn.textContent='Pause';
+      pit=setInterval(()=>{
+        if(cur>=steps.length-1){clearInterval(pit);pit=null;btn.textContent='Play';}
+        else go(cur+1);
+      },500);
+    }
+  }
+
+  document.getElementById('glat').addEventListener('change',()=>{cityName=`(${document.getElementById('glat').value}°, ${document.getElementById('glon').value}°)`;calc();});
+  document.getElementById('glon').addEventListener('change',()=>{cityName=`(${document.getElementById('glat').value}°, ${document.getElementById('glon').value}°)`;calc();});
+  window.addEventListener('resize',()=>dm(cur));
+  matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>dm(cur));
+  setTimeout(()=>dm(-1),80);
+  calc();
+  </script>
+
+</body>
+</html>
