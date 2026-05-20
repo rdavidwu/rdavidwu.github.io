@@ -1203,5 +1203,62 @@ EPS = <span class="num">1e-6</span>
   });
 </script>
 
+<script>
+  const lcSlugs = {
+    17: 'letter-combinations-of-a-phone-number',
+    22: 'generate-parentheses',
+    37: 'sudoku-solver',
+    39: 'combination-sum',
+    40: 'combination-sum-ii',
+    46: 'permutations',
+    47: 'permutations-ii',
+    51: 'n-queens',
+    62: 'unique-paths',
+    64: 'minimum-path-sum',
+    70: 'climbing-stairs',
+    77: 'combinations',
+    78: 'subsets',
+    79: 'word-search',
+    91: 'decode-ways',
+    124: 'binary-tree-maximum-path-sum',
+    126: 'word-ladder-ii',
+    131: 'palindrome-partitioning',
+    133: 'clone-graph',
+    139: 'word-break',
+    140: 'word-break-ii',
+    174: 'dungeon-game',
+    200: 'number-of-islands',
+    207: 'course-schedule',
+    216: 'combination-sum-iii',
+    282: 'expression-add-operators',
+    322: 'coin-change',
+    332: 'reconstruct-itinerary',
+    377: 'combination-sum-iv',
+    416: 'partition-equal-subset-sum',
+    494: 'target-sum',
+    638: 'shopping-offers',
+    787: 'cheapest-flights-within-k-stops',
+    797: 'all-paths-source-target',
+    980: 'unique-paths-iii',
+  };
+
+  document.querySelectorAll('.problem-chip').forEach(chip => {
+    const lcSpan = chip.querySelector('.lc');
+    if (!lcSpan) return;
+    const match = lcSpan.textContent.match(/\d+/);
+    if (!match) return;
+    const num = parseInt(match[0]);
+    const slug = lcSlugs[num];
+    if (!slug) return;
+    const a = document.createElement('a');
+    a.href = 'https://leetcode.com/problems/' + slug + '/';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.textDecoration = 'none';
+    chip.parentNode.insertBefore(a, chip);
+    a.appendChild(chip);
+  });
+</script>
+
 </body>
 </html>
