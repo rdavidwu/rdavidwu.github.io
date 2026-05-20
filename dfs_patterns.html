@@ -509,7 +509,6 @@
   <button class="tab-btn" data-tab="explicit-implicit">Explicit vs implicit</button>
   <button class="tab-btn" data-tab="branching">Branching styles</button>
   <button class="tab-btn" data-tab="shapes">The 6 shapes</button>
-  <button class="tab-btn" data-tab="compare">Menu vs LC 638</button>
   <button class="tab-btn" data-tab="quickref">Quick reference</button>
 </div>
 
@@ -1102,98 +1101,6 @@ EPS = <span class="num">1e-6</span>
 
 </section>
 
-<!-- =================== MENU VS LC 638 =================== -->
-<section class="tab-panel" id="tab-compare">
-
-<p>The menu problem and LC 638 Shopping Offers look like the same problem. They're not. Walking the three flowchart questions on each shows where they diverge.</p>
-
-<div class="compare-grid">
-  <div class="compare-panel menu">
-    <div class="compare-header">Menu problem</div>
-    <div class="compare-body">
-      <p><strong>Q1.</strong> Implicit — choosing entries → backtracking.</p>
-      <p><strong>Q2.</strong> All combinations at minimum cost → <strong>Shape F</strong>.</p>
-      <p><strong>Q3.</strong> Path-dependent (which combinations got us here) → no naive memoization. Add cost pruning.</p>
-      <p><strong>Master problem:</strong> Weighted Set Cover. NP-hard.</p>
-    </div>
-  </div>
-
-  <div class="compare-panel lc638">
-    <div class="compare-header">LC 638 Shopping Offers</div>
-    <div class="compare-body">
-      <p><strong>Q1.</strong> Implicit — choosing offers → backtracking.</p>
-      <p><strong>Q2.</strong> Minimum cost only, one number → <strong>Shape E</strong>.</p>
-      <p><strong>Q3.</strong> Path-independent — answer for a given <code>needs</code> tuple is fixed. → Memoize on tuple. Becomes top-down DP.</p>
-      <p><strong>Master problem:</strong> Bounded unbounded-knapsack variant. Polynomial in state space.</p>
-    </div>
-  </div>
-</div>
-
-<h3>Dimension-by-dimension</h3>
-
-<table class="compare-table">
-  <thead>
-    <tr><th>Dimension</th><th>Menu problem</th><th>LC 638</th></tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Multiplicity of items</td>
-      <td class="menu-col">Each wanted item needed <strong>once</strong> (set membership)</td>
-      <td class="lc-col">Each item needed <strong>N times</strong> (count vector)</td>
-    </tr>
-    <tr>
-      <td>State representation</td>
-      <td class="menu-col">Set of remaining items, or bitmask over wants</td>
-      <td class="lc-col">Tuple of remaining counts per item</td>
-    </tr>
-    <tr>
-      <td>State space size</td>
-      <td class="menu-col">2<sup>n</sup> for n wants (≤ 2<sup>20</sup>)</td>
-      <td class="lc-col">∏ (needs[i] + 1) (≤ ~117K)</td>
-    </tr>
-    <tr>
-      <td>Entry / offer reuse</td>
-      <td class="menu-col">At most once per entry (binary take/skip)</td>
-      <td class="lc-col">Unlimited reuse per offer</td>
-    </tr>
-    <tr>
-      <td>Overbuying allowed?</td>
-      <td class="menu-col">Yes — combo extras are ignored</td>
-      <td class="lc-col">No — must match needs exactly</td>
-    </tr>
-    <tr>
-      <td>Output shape</td>
-      <td class="menu-col">All optimal combinations (Shape F)</td>
-      <td class="lc-col">Minimum cost only (Shape E)</td>
-    </tr>
-    <tr>
-      <td>Memoization</td>
-      <td class="menu-col">Not naively — path-dependent</td>
-      <td class="lc-col">Yes — memoize on remaining-counts tuple</td>
-    </tr>
-    <tr>
-      <td>Price type</td>
-      <td class="menu-col">Floats (need epsilon)</td>
-      <td class="lc-col">Integers (clean comparisons)</td>
-    </tr>
-    <tr>
-      <td>Master problem</td>
-      <td class="menu-col">Weighted Set Cover (NP-hard)</td>
-      <td class="lc-col">Bounded unbounded-knapsack variant</td>
-    </tr>
-    <tr>
-      <td>Difficulty</td>
-      <td class="menu-col">Hard (Shape F + epsilon + set cover)</td>
-      <td class="lc-col">Medium</td>
-    </tr>
-  </tbody>
-</table>
-
-<div class="callout">
-  <strong>The lesson:</strong> Similar-looking problems can diverge sharply when you walk the flowchart. The set-vs-multiset distinction (Q3 on state) and the single-vs-all-optima distinction (Q2 on output) each independently change the algorithm. Together, they make the menu problem a different beast from LC 638 despite their surface resemblance.
-</div>
-
-</section>
 
 <!-- =================== QUICK REFERENCE =================== -->
 <section class="tab-panel" id="tab-quickref">
