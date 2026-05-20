@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DFS patterns reference</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f6f1;
+    --surface-2: #ffffff;
+    --border: rgba(0,0,0,0.12);
+    --border-strong: rgba(0,0,0,0.22);
+    --text: #1a1a1a;
+    --text-muted: #5f5e5a;
+    --text-faint: #888780;
+    --code-bg: #f4f2eb;
+    --accent: #185FA5;
+    --accent-bg: #E6F1FB;
+    --purple: #534AB7;
+    --purple-bg: #EEEDFE;
+    --teal: #0F6E56;
+    --teal-bg: #E1F5EE;
+    --amber: #854F0B;
+    --amber-bg: #FAEEDA;
+    --coral: #993C1D;
+    --coral-bg: #FAECE7;
+    --pink: #993556;
+    --pink-bg: #FBEAF0;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --gray-bg: #F1EFE8;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "SF Mono", Monaco, Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a;
+      --surface: #232220;
+      --surface-2: #2a2926;
+      --border: rgba(255,255,255,0.15);
+      --border-strong: rgba(255,255,255,0.28);
+      --text: #f0eee8;
+      --text-muted: #b4b2a9;
+      --text-faint: #888780;
+      --code-bg: #1e1d1b;
+      --accent: #85B7EB;
+      --accent-bg: #042C53;
+      --purple: #AFA9EC;
+      --purple-bg: #26215C;
+      --teal: #5DCAA5;
+      --teal-bg: #04342C;
+      --amber: #FAC775;
+      --amber-bg: #412402;
+      --coral: #F0997B;
+      --coral-bg: #4A1B0C;
+      --pink: #ED93B1;
+      --pink-bg: #4B1528;
+      --green: #97C459;
+      --green-bg: #173404;
+      --gray-bg: #2C2C2A;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 2rem 1.5rem 4rem;
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 500;
+    margin: 0 0 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 14.5px;
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 500;
+    margin: 2rem 0 1rem;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  p { margin: 0 0 0.85rem; }
+
+  code {
+    font-family: var(--font-mono);
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.92em;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    padding: 10px 18px;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Flowchart styles */
+  .flowchart {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+  }
+
+  .node {
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 0 auto;
+    max-width: 480px;
+    text-align: center;
+  }
+
+  .node.question {
+    background: var(--accent-bg);
+    color: var(--accent);
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .node.shape-a { background: var(--green-bg); color: var(--green); border: 0; }
+  .node.shape-b { background: var(--teal-bg); color: var(--teal); border: 0; }
+  .node.shape-c { background: var(--accent-bg); color: var(--accent); border: 0; }
+  .node.shape-d { background: var(--purple-bg); color: var(--purple); border: 0; }
+  .node.shape-e { background: var(--amber-bg); color: var(--amber); border: 0; }
+  .node.shape-f { background: var(--coral-bg); color: var(--coral); border: 0; }
+
+  .arrow {
+    text-align: center;
+    color: var(--text-faint);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 6px 0;
+  }
+
+  .branches {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 8px 0;
+  }
+
+  .branch-label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  /* Shape cards */
+  .shape-card {
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .shape-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .shape-tag {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+
+  .shape-tag.a { background: var(--green-bg); color: var(--green); }
+  .shape-tag.b { background: var(--teal-bg); color: var(--teal); }
+  .shape-tag.c { background: var(--accent-bg); color: var(--accent); }
+  .shape-tag.d { background: var(--purple-bg); color: var(--purple); }
+  .shape-tag.e { background: var(--amber-bg); color: var(--amber); }
+  .shape-tag.f { background: var(--coral-bg); color: var(--coral); }
+
+  .shape-title {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .shape-summary {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 0 0 1rem;
+  }
+
+  .shape-section {
+    margin-top: 1rem;
+  }
+
+  .shape-section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  pre {
+    margin: 0;
+    padding: 14px 16px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--code-bg);
+    color: var(--text);
+    overflow-x: auto;
+    border-radius: 8px;
+  }
+
+  .kw { color: #993556; font-weight: 500; }
+  .fn { color: #185FA5; }
+  .str { color: #3B6D11; }
+  .num { color: #993C1D; }
+  .com { color: var(--text-faint); font-style: italic; }
+  .builtin { color: #534AB7; }
+
+  @media (prefers-color-scheme: dark) {
+    .kw { color: #ED93B1; }
+    .fn { color: #85B7EB; }
+    .str { color: #97C459; }
+    .num { color: #F0997B; }
+    .builtin { color: #AFA9EC; }
+  }
+
+  .problem-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .problem-chip {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 4px 12px;
+    font-size: 12.5px;
+    color: var(--text);
+  }
+
+  .problem-chip .lc {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-size: 11.5px;
+    margin-right: 4px;
+  }
+
+  /* Two-column compare */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 1rem 0 2rem;
+  }
+
+  @media (max-width: 850px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .branches { grid-template-columns: 1fr; }
+  }
+
+  .compare-panel {
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .compare-header {
+    padding: 12px 16px;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .compare-panel.menu .compare-header {
+    background: var(--coral-bg);
+    color: var(--coral);
+  }
+
+  .compare-panel.lc638 .compare-header {
+    background: var(--teal-bg);
+    color: var(--teal);
+  }
+
+  .compare-body {
+    padding: 16px;
+    font-size: 14px;
+  }
+
+  .compare-body p { margin: 0 0 12px; }
+  .compare-body p:last-child { margin-bottom: 0; }
+
+  /* Compare table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 1rem 0 2rem;
+  }
+
+  .compare-table th, .compare-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 0.5px solid var(--border);
+    vertical-align: top;
+  }
+
+  .compare-table th {
+    background: var(--surface);
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  .compare-table td.menu-col {
+    background: rgba(250, 236, 231, 0.4);
+  }
+
+  .compare-table td.lc-col {
+    background: rgba(225, 245, 238, 0.5);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .compare-table td.menu-col { background: rgba(74, 27, 12, 0.3); }
+    .compare-table td.lc-col { background: rgba(4, 52, 44, 0.4); }
+  }
+
+  /* Explicit vs implicit */
+  .ei-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 1rem 0 2rem;
+  }
+
+  .ei-card {
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .ei-card.explicit .ei-header { background: var(--accent-bg); color: var(--accent); }
+  .ei-card.implicit .ei-header { background: var(--purple-bg); color: var(--purple); }
+
+  .ei-header {
+    padding: 14px 18px;
+    font-weight: 500;
+    font-size: 15px;
+  }
+
+  .ei-body {
+    padding: 16px 18px;
+    background: var(--surface-2);
+  }
+
+  .ei-body p {
+    font-size: 14px;
+    margin: 0 0 12px;
+  }
+
+  .ei-key {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  /* Callout */
+  .callout {
+    background: var(--accent-bg);
+    color: var(--accent);
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    margin: 1.25rem 0;
+  }
+
+  .callout.tip {
+    background: var(--teal-bg);
+    color: var(--teal);
+  }
+
+  .callout.warn {
+    background: var(--amber-bg);
+    color: var(--amber);
+  }
+
+  /* Quick reference grid */
+  .quickref {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin: 1rem 0 2rem;
+  }
+
+  .quickref-card {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .quickref-card .qr-tag {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    background: var(--surface-2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 6px;
+  }
+
+  .qr-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 6px;
+  }
+
+  .qr-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  hr.sep {
+    border: 0;
+    border-top: 0.5px solid var(--border);
+    margin: 2rem 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>DFS patterns reference</h1>
+  <p class="subtitle">Three questions, six shapes. Walk the flowchart, find the shape, write the skeleton.</p>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="flow">Flowchart</button>
+  <button class="tab-btn" data-tab="explicit-implicit">Explicit vs implicit</button>
+  <button class="tab-btn" data-tab="branching">Branching styles</button>
+  <button class="tab-btn" data-tab="shapes">The 6 shapes</button>
+  <button class="tab-btn" data-tab="compare">Menu vs LC 638</button>
+  <button class="tab-btn" data-tab="quickref">Quick reference</button>
+</div>
+
+<!-- =================== FLOWCHART =================== -->
+<section class="tab-panel active" id="tab-flow">
+
+<p>Every DFS problem reduces to three questions. Answer them in order and the algorithm falls out.</p>
+
+<p style="font-size: 13.5px; color: var(--text-muted);">If Q1 lands you on backtracking, there's a fourth question for <em>how each level branches</em> — covered in the <strong>Branching styles</strong> tab.</p>
+
+<div class="flowchart">
+
+  <div class="node question">1. Is the thing I'm traversing already in memory?</div>
+  <div class="branches">
+    <div>
+      <div class="branch-label">YES — given graph, tree, or grid</div>
+      <div class="node" style="background: var(--accent-bg); color: var(--accent);">Graph / tree / grid DFS<br><span style="font-size: 12px; opacity: 0.85;">no undo, mark visited</span></div>
+    </div>
+    <div>
+      <div class="branch-label">NO — building decisions as I go</div>
+      <div class="node" style="background: var(--purple-bg); color: var(--purple);">Backtracking<br><span style="font-size: 12px; opacity: 0.85;">apply → recurse → undo</span></div>
+    </div>
+  </div>
+
+  <div class="arrow">↓ both paths continue ↓</div>
+
+  <div class="node question">2. What am I producing?</div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px;">
+    <div class="node shape-a"><strong>Shape A</strong> — Boolean<br><span style="font-size: 12px; opacity: 0.85;">does it exist?</span></div>
+    <div class="node shape-b"><strong>Shape B</strong> — Count<br><span style="font-size: 12px; opacity: 0.85;">how many?</span></div>
+    <div class="node shape-c"><strong>Shape C</strong> — One example<br><span style="font-size: 12px; opacity: 0.85;">find any solution</span></div>
+    <div class="node shape-d"><strong>Shape D</strong> — All solutions<br><span style="font-size: 12px; opacity: 0.85;">enumerate every valid</span></div>
+    <div class="node shape-e"><strong>Shape E</strong> — Single optimum<br><span style="font-size: 12px; opacity: 0.85;">find the best</span></div>
+    <div class="node shape-f"><strong>Shape F</strong> — All optima<br><span style="font-size: 12px; opacity: 0.85;">every solution at best value</span></div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <div class="node question">3. Is my state path-independent?</div>
+  <div class="branches">
+    <div>
+      <div class="branch-label">YES — same state, same answer</div>
+      <div class="node" style="background: var(--teal-bg); color: var(--teal);">Add memoization<br><span style="font-size: 12px; opacity: 0.85;">→ top-down DP territory</span></div>
+    </div>
+    <div>
+      <div class="branch-label">NO — answer depends on path</div>
+      <div class="node" style="background: var(--gray-bg); color: var(--text);">Plain DFS<br><span style="font-size: 12px; opacity: 0.85;">consider pruning instead</span></div>
+    </div>
+  </div>
+
+</div>
+
+<h3>How to use this</h3>
+<p>When you see a new problem, work through these three questions out loud (or in your head). The answers determine your code skeleton before you write a single line.</p>
+
+<div class="callout tip">
+  <strong>Worked example — the menu problem.</strong><br>
+  Q1: Building decisions (which entries to include) → backtracking.<br>
+  Q2: All combinations achieving minimum cost → Shape F.<br>
+  Q3: Path-dependent (cost + partial combo) → no memoization, add pruning.<br>
+  <strong>Branching:</strong> Order doesn't matter, each entry used at most once → binary include/exclude (Style 2).<br>
+  Result: backtracking with running best, result accumulator, cost-based prune, take/skip branching.
+</div>
+
+<div class="callout tip">
+  <strong>Worked example — LC 638 Shopping Offers.</strong><br>
+  Q1: Building decisions (which offers to apply) → backtracking.<br>
+  Q2: Minimum cost only, single number → Shape E.<br>
+  Q3: Path-independent (cost from remaining-counts doesn't depend on history) → memoize on count tuple.<br>
+  <strong>Branching:</strong> Offers can be applied unlimited times → for-each-choice (Style 1) over offers at each state.<br>
+  Result: top-down DP with memoization, no all-optima tracking.
+</div>
+
+<div class="callout">
+  <strong>The trap to avoid:</strong> Pattern-matching problem titles to memorized solutions. The framework forces you to derive the algorithm from structure, not from recall. That's what senior interviewers probe.
+</div>
+
+</section>
+
+<!-- =================== EXPLICIT VS IMPLICIT =================== -->
+<section class="tab-panel" id="tab-explicit-implicit">
+
+<p>The first fork is about whether the search structure exists before you start. This determines whether you need an undo step.</p>
+
+<div class="ei-grid">
+  <div class="ei-card explicit">
+    <div class="ei-header">Explicit structure</div>
+    <div class="ei-body">
+      <p class="ei-key">What it means</p>
+      <p>The graph, tree, or grid you're walking exists in memory. You traverse <em>through</em> it. Moving to a neighbor doesn't change the structure — there's nothing to undo.</p>
+
+      <p class="ei-key">Telltale signs</p>
+      <p>The input is a <code>List[List[int]]</code> grid, a <code>TreeNode</code> root, an adjacency list, or a <code>Node</code> with <code>.neighbors</code>. You're given the structure and asked to inspect or traverse it.</p>
+
+      <p class="ei-key">Code shape</p>
+<pre><span class="kw">def</span> <span class="fn">dfs</span>(node, visited):
+<span class="kw">    if</span> node <span class="kw">in</span> visited: <span class="kw">return</span>
+    visited.add(node)
+<span class="kw">    for</span> neighbor <span class="kw">in</span> node.neighbors:
+        <span class="fn">dfs</span>(neighbor, visited)</pre>
+
+      <p class="ei-key" style="margin-top: 14px;">Example problems</p>
+      <div class="problem-list">
+        <span class="problem-chip"><span class="lc">LC 200</span>Number of Islands</span>
+        <span class="problem-chip"><span class="lc">LC 207</span>Course Schedule</span>
+        <span class="problem-chip"><span class="lc">LC 133</span>Clone Graph</span>
+        <span class="problem-chip"><span class="lc">LC 797</span>All Paths From Source to Target</span>
+        <span class="problem-chip"><span class="lc">LC 124</span>Binary Tree Maximum Path Sum</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ei-card implicit">
+    <div class="ei-header">Implicit structure</div>
+    <div class="ei-body">
+      <p class="ei-key">What it means</p>
+      <p>The "tree" is conceptual — each node is a state in a decision space, each edge is a choice. You build it as you walk. Trying a different choice means undoing the current one first.</p>
+
+      <p class="ei-key">Telltale signs</p>
+      <p>Input is a plain array, string, or set of items. The question asks you to <em>choose, place, partition, or combine</em>. No graph is given.</p>
+
+      <p class="ei-key">Code shape</p>
+<pre><span class="kw">def</span> <span class="fn">dfs</span>(i, state):
+<span class="kw">    if</span> goal(state): record(state); <span class="kw">return</span>
+<span class="kw">    if</span> i == n: <span class="kw">return</span>
+<span class="kw">    for</span> choice <span class="kw">in</span> choices(i):
+        apply(choice)
+        <span class="fn">dfs</span>(i + <span class="num">1</span>, new_state)
+        undo(choice)   <span class="com"># <-- the key step</span></pre>
+
+      <p class="ei-key" style="margin-top: 14px;">Example problems</p>
+      <div class="problem-list">
+        <span class="problem-chip"><span class="lc">LC 78</span>Subsets</span>
+        <span class="problem-chip"><span class="lc">LC 46</span>Permutations</span>
+        <span class="problem-chip"><span class="lc">LC 51</span>N-Queens</span>
+        <span class="problem-chip"><span class="lc">LC 37</span>Sudoku Solver</span>
+        <span class="problem-chip"><span class="lc">LC 39</span>Combination Sum</span>
+        <span class="problem-chip"><span class="lc">LC 22</span>Generate Parentheses</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>The undo step is the giveaway.</strong> If you find yourself writing <code>state.append(x)</code> ... <code>state.pop()</code> around a recursive call, you're doing backtracking on an implicit structure. If you're not — if you just walk neighbors and mark visited — you're doing graph DFS on an explicit structure.
+</div>
+
+<h3>Hybrid cases</h3>
+<p>Some problems blur the line. <code>LC 79 Word Search</code> (find a word in a grid) walks an explicit grid but uses backtracking-with-undo because cells get marked-unmarked as you try different paths. The grid is explicit; the search through it builds an implicit decision tree. In these cases, you typically need both patterns: walk the explicit structure, undo the markings as you backtrack.</p>
+
+</section>
+
+<!-- =================== BRANCHING STYLES =================== -->
+<section class="tab-panel" id="tab-branching">
+
+<p>Once you're doing backtracking on an implicit structure, there's a second decision: <strong>how does each recursion level branch?</strong> Three styles cover almost every backtracking problem. Picking the right one is what prevents duplicate-output bugs.</p>
+
+<div class="callout">
+  <strong>The central question:</strong> Does order matter in the output? If yes → for-each-choice. If no → binary include/exclude or for-each-from-start. This single question determines your branching style.
+</div>
+
+<!-- Style 1 -->
+<div class="shape-card">
+  <div class="shape-header">
+    <span class="shape-tag c">Style 1</span>
+    <span class="shape-title">For-each-choice (positions × values)</span>
+  </div>
+  <p class="shape-summary">Each recursion level represents a <em>position</em> to fill. Children fan out over candidate <em>values</em>. Use when order matters in the output.</p>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton</div>
+<pre><span class="kw">def</span> <span class="fn">dfs</span>(position, state, path):
+<span class="kw">    if</span> position == n:
+        results.append(path[:])
+<span class="kw">        return</span>
+<span class="kw">    for</span> value <span class="kw">in</span> valid_values(position, state):
+        apply(position, value)
+        path.append(value)
+        <span class="fn">dfs</span>(position + <span class="num">1</span>, state, path)
+        path.pop()
+        undo(position, value)</pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Mental model</div>
+    <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">
+      "I have N positions. For position 0, try each valid value. For position 1, try each valid value. ..." The branching factor at each level = number of values, depth = N positions.
+    </p>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Example problems</div>
+    <div class="problem-list">
+      <span class="problem-chip"><span class="lc">LC 46</span>Permutations</span>
+      <span class="problem-chip"><span class="lc">LC 47</span>Permutations II</span>
+      <span class="problem-chip"><span class="lc">LC 51</span>N-Queens</span>
+      <span class="problem-chip"><span class="lc">LC 37</span>Sudoku Solver</span>
+      <span class="problem-chip"><span class="lc">LC 22</span>Generate Parentheses</span>
+      <span class="problem-chip"><span class="lc">LC 17</span>Letter Combinations of Phone Number</span>
+      <span class="problem-chip"><span class="lc">LC 79</span>Word Search</span>
+    </div>
+  </div>
+</div>
+
+<!-- Style 2 -->
+<div class="shape-card">
+  <div class="shape-header">
+    <span class="shape-tag d">Style 2</span>
+    <span class="shape-title">Binary include / exclude</span>
+  </div>
+  <p class="shape-summary">Each recursion level represents <em>one item to decide on</em>. Exactly two children: "with this item" and "without this item." Use when order doesn't matter and each item is used at most once.</p>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton</div>
+<pre><span class="kw">def</span> <span class="fn">dfs</span>(i, state, path):
+<span class="kw">    if</span> goal_or_base_case:
+        record(path)
+<span class="kw">        return</span>
+<span class="kw">    if</span> i == n: <span class="kw">return</span>
+
+    <span class="com"># Include item i</span>
+    path.append(items[i])
+    <span class="fn">dfs</span>(i + <span class="num">1</span>, new_state, path)
+    path.pop()
+
+    <span class="com"># Exclude item i</span>
+    <span class="fn">dfs</span>(i + <span class="num">1</span>, state, path)</pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Mental model</div>
+    <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">
+      "For each item in order, decide yes or no." Branching factor = 2, depth = N items. The fixed iteration order is what prevents duplicate outputs like <code>[1,2]</code> and <code>[2,1]</code>.
+    </p>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Example problems</div>
+    <div class="problem-list">
+      <span class="problem-chip">The menu problem</span>
+      <span class="problem-chip"><span class="lc">LC 416</span>Partition Equal Subset Sum</span>
+      <span class="problem-chip"><span class="lc">LC 494</span>Target Sum</span>
+      <span class="problem-chip">0/1 Knapsack</span>
+      <span class="problem-chip">Subset Sum variants</span>
+    </div>
+  </div>
+</div>
+
+<!-- Style 3 -->
+<div class="shape-card">
+  <div class="shape-header">
+    <span class="shape-tag b">Style 3</span>
+    <span class="shape-title">For-each from start index</span>
+  </div>
+  <p class="shape-summary">Like binary include/exclude, but expressed as a loop over remaining items. Each recursive call considers items from a start index onward. Use for subsets and combinations.</p>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton</div>
+<pre><span class="kw">def</span> <span class="fn">dfs</span>(start, path):
+    record(path)   <span class="com"># every node may be valid</span>
+<span class="kw">    for</span> i <span class="kw">in</span> <span class="builtin">range</span>(start, n):
+        path.append(items[i])
+        <span class="fn">dfs</span>(i + <span class="num">1</span>, path)   <span class="com"># i + 1 = no reuse</span>
+        path.pop()
+        <span class="com"># For "with replacement" (LC 39), use dfs(i, path)</span></pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Mental model</div>
+    <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">
+      "Walk forward through items in order. At each step, pick this item and continue, or skip it." Same outputs as binary include/exclude but the tree shape differs. The <code>start</code> parameter prevents revisiting earlier items, ensuring no duplicates.
+    </p>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Example problems</div>
+    <div class="problem-list">
+      <span class="problem-chip"><span class="lc">LC 78</span>Subsets</span>
+      <span class="problem-chip"><span class="lc">LC 77</span>Combinations</span>
+      <span class="problem-chip"><span class="lc">LC 39</span>Combination Sum (with replacement: i not i+1)</span>
+      <span class="problem-chip"><span class="lc">LC 40</span>Combination Sum II</span>
+      <span class="problem-chip"><span class="lc">LC 131</span>Palindrome Partitioning</span>
+      <span class="problem-chip"><span class="lc">LC 216</span>Combination Sum III</span>
+    </div>
+  </div>
+</div>
+
+<hr class="sep">
+
+<h3>Style 2 vs Style 3: are they the same?</h3>
+
+<p>They produce identical answer sets for subset-style problems but explore the tree differently:</p>
+
+<div class="compare-grid">
+  <div class="compare-panel menu" style="border-radius: 12px;">
+    <div class="compare-header" style="background: var(--purple-bg); color: var(--purple);">Style 2 tree (binary)</div>
+    <div class="compare-body">
+      <p>For <code>items=[A,B,C]</code>: every internal node has exactly 2 children. Depth always 3. Total leaves = 2³ = 8 (one per subset, including empty).</p>
+      <p>Cleaner when you have a clear "decide each item" framing — like the menu problem deciding whether to include each entry.</p>
+    </div>
+  </div>
+  <div class="compare-panel lc638" style="border-radius: 12px;">
+    <div class="compare-header" style="background: var(--teal-bg); color: var(--teal);">Style 3 tree (start-index loop)</div>
+    <div class="compare-body">
+      <p>For <code>items=[A,B,C]</code>: branching factor decreases as you go deeper (3 at top, then 2, then 1). Each <em>node</em> is a valid subset, not just leaves.</p>
+      <p>Cleaner when every prefix path is a valid answer — like LC 78 Subsets where you record at every node.</p>
+    </div>
+  </div>
+</div>
+
+<div class="callout tip">
+  Pick whichever feels more natural for the specific problem. They're equivalent in correctness. Style 2 reads "decide yes/no for each," Style 3 reads "walk forward picking what to add." Most people develop a preference.
+</div>
+
+<hr class="sep">
+
+<h3>Decision rule</h3>
+
+<table class="compare-table">
+  <thead>
+    <tr><th>Question</th><th>Answer</th><th>Style</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Does order matter in the output? <code>[1,2] ≠ [2,1]</code></td>
+      <td>Yes</td>
+      <td><strong>Style 1</strong> (for-each-choice)</td>
+    </tr>
+    <tr>
+      <td>Order doesn't matter, each item used at most once</td>
+      <td>—</td>
+      <td><strong>Style 2 or 3</strong></td>
+    </tr>
+    <tr>
+      <td>Each item can be used multiple times (with replacement)</td>
+      <td>—</td>
+      <td><strong>Style 3 with i not i+1</strong></td>
+    </tr>
+    <tr>
+      <td>Filling N fixed positions with constrained values</td>
+      <td>—</td>
+      <td><strong>Style 1</strong></td>
+    </tr>
+    <tr>
+      <td>Walking a grid/graph and choosing neighbors</td>
+      <td>—</td>
+      <td><strong>Style 1</strong> over neighbor list</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Worked example — the menu problem</h3>
+
+<p>Walk the decision: does order matter? No — <code>["3","4","7"]</code> and <code>["7","4","3"]</code> are the same combination. Are items used at most once? Yes — you don't order the same menu entry twice. So Style 2 (binary include/exclude) or Style 3 (for-each-from-start) both apply.</p>
+
+<p>The solution we wrote uses Style 2: for each entry, decide take or skip. That framing matches the problem language ("which entries do I include?") and produces exactly one path per combination, no deduplication needed.</p>
+
+<div class="callout warn">
+  <strong>What goes wrong if you pick the wrong style.</strong> If you used Style 1 (for-each-choice) on the menu problem — "for entry in entries: take it and recurse on remaining" — you'd generate <code>[3,4,7]</code> and <code>[4,3,7]</code> and <code>[7,3,4]</code> ... as separate branches, then your output would contain 6 copies of every 3-element combination. You'd then need to deduplicate by sorting and using a set of tuples. Wasted work. Style 2 sidesteps this by construction.
+</div>
+
+</section>
+
+<!-- =================== THE 6 SHAPES =================== -->
+<section class="tab-panel" id="tab-shapes">
+
+<p>Once you know whether you're traversing explicit or implicit structure, the output shape determines your code skeleton. These six cover almost everything.</p>
+
+<!-- Shape A -->
+<div class="shape-card">
+  <div class="shape-header">
+    <span class="shape-tag a">Shape A</span>
+    <span class="shape-title">Boolean — does it exist?</span>
+  </div>
+  <p class="shape-summary">Return <code>True</code> as soon as any branch finds a valid solution. Short-circuits the entire search.</p>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton</div>
+<pre><span class="kw">def</span> <span class="fn">dfs</span>(state) -> <span class="builtin">bool</span>:
+<span class="kw">    if</span> is_goal(state): <span class="kw">return</span> <span class="builtin">True</span>
+<span class="kw">    if</span> is_dead_end(state): <span class="kw">return</span> <span class="builtin">False</span>
+<span class="kw">    for</span> choice <span class="kw">in</span> choices(state):
+<span class="kw">        if</span> <span class="fn">dfs</span>(next_state(state, choice)):
+<span class="kw">            return</span> <span class="builtin">True</span>   <span class="com"># short-circuit</span>
+<span class="kw">    return</span> <span class="builtin">False</span></pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Example problems</div>
+    <div class="problem-list">
+      <span class="problem-chip"><span class="lc">LC 416</span>Partition Equal Subset Sum</span>
+      <span class="problem-chip"><span class="lc">LC 79</span>Word Search</span>
+      <span class="problem-chip"><span class="lc">LC 207</span>Course Schedule (cycle exists?)</span>
+      <span class="problem-chip"><span class="lc">LC 282</span>Expression Add Operators (reach target?)</span>
+      <span class="problem-chip"><span class="lc">LC 980</span>Unique Paths III variant (path exists?)</span>
+    </div>
+  </div>
+</div>
+
+<!-- Shape B -->
+<div class="shape-card">
+  <div class="shape-header">
+    <span class="shape-tag b">Shape B</span>
+    <span class="shape-title">Count — how many?</span>
+  </div>
+  <p class="shape-summary">Accumulate a count from subtrees. Each branch contributes a number; sum them up. No short-circuit.</p>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton</div>
+<pre><span class="kw">def</span> <span class="fn">dfs</span>(state) -> <span class="builtin">int</span>:
+<span class="kw">    if</span> is_goal(state): <span class="kw">return</span> <span class="num">1</span>
+<span class="kw">    if</span> is_dead_end(state): <span class="kw">return</span> <span class="num">0</span>
+    total = <span class="num">0</span>
+<span class="kw">    for</span> choice <span class="kw">in</span> choices(state):
+        total += <span class="fn">dfs</span>(next_state(state, choice))
+<span class="kw">    return</span> total</pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Example problems</div>
+    <div class="problem-list">
+      <span class="problem-chip"><span class="lc">LC 200</span>Number of Islands</span>
+      <span class="problem-chip"><span class="lc">LC 91</span>Decode Ways</span>
+      <span class="problem-chip"><span class="lc">LC 70</span>Climbing Stairs</span>
+      <span class="problem-chip"><span class="lc">LC 62</span>Unique Paths</span>
+      <span class="problem-chip"><span class="lc">LC 377</span>Combination Sum IV</span>
+    </div>
+  </div>
+
+  <div class="callout tip" style="margin-top: 14px; font-size: 13px;">
+    Shape B problems are <strong>memoization magnets</strong>. The count from a given state is path-independent, so memoization usually applies — turning the DFS into top-down DP.
+  </div>
+</div>
+
+<!-- Shape C -->
+<div class="shape-card">
+  <div class="shape-header">
+    <span class="shape-tag c">Shape C</span>
+    <span class="shape-title">One example — find any solution</span>
+  </div>
+  <p class="shape-summary">Carry the path/state with you. When you hit a goal, return it. First success bubbles up; failure tries the next branch.</p>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton</div>
+<pre><span class="kw">def</span> <span class="fn">dfs</span>(state, path) -> <span class="builtin">list</span> | <span class="builtin">None</span>:
+<span class="kw">    if</span> is_goal(state): <span class="kw">return</span> path[:]
+<span class="kw">    if</span> is_dead_end(state): <span class="kw">return</span> <span class="builtin">None</span>
+<span class="kw">    for</span> choice <span class="kw">in</span> choices(state):
+        path.append(choice)
+        result = <span class="fn">dfs</span>(next_state(state, choice), path)
+<span class="kw">        if</span> result <span class="kw">is not</span> <span class="builtin">None</span>:
+<span class="kw">            return</span> result   <span class="com"># short-circuit</span>
+        path.pop()
+<span class="kw">    return</span> <span class="builtin">None</span></pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Example problems</div>
+    <div class="problem-list">
+      <span class="problem-chip"><span class="lc">LC 37</span>Sudoku Solver</span>
+      <span class="problem-chip"><span class="lc">LC 51</span>N-Queens (one solution variant)</span>
+      <span class="problem-chip"><span class="lc">LC 139</span>Word Break (any valid)</span>
+      <span class="problem-chip"><span class="lc">LC 332</span>Reconstruct Itinerary</span>
+    </div>
+  </div>
+</div>
+
+<!-- Shape D -->
+<div class="shape-card">
+  <div class="shape-header">
+    <span class="shape-tag d">Shape D</span>
+    <span class="shape-title">All solutions — enumerate every valid</span>
+  </div>
+  <p class="shape-summary">No short-circuit. Append every successful path to an outer result list. Exhaust the entire search space.</p>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton</div>
+<pre>results = []
+
+<span class="kw">def</span> <span class="fn">dfs</span>(state, path):
+<span class="kw">    if</span> is_goal(state):
+        results.append(path[:])
+<span class="kw">        return</span>
+<span class="kw">    if</span> is_dead_end(state): <span class="kw">return</span>
+<span class="kw">    for</span> choice <span class="kw">in</span> choices(state):
+        path.append(choice)
+        <span class="fn">dfs</span>(next_state(state, choice), path)
+        path.pop()</pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Example problems</div>
+    <div class="problem-list">
+      <span class="problem-chip"><span class="lc">LC 78</span>Subsets</span>
+      <span class="problem-chip"><span class="lc">LC 46</span>Permutations</span>
+      <span class="problem-chip"><span class="lc">LC 39</span>Combination Sum</span>
+      <span class="problem-chip"><span class="lc">LC 22</span>Generate Parentheses</span>
+      <span class="problem-chip"><span class="lc">LC 140</span>Word Break II</span>
+      <span class="problem-chip"><span class="lc">LC 797</span>All Paths From Source to Target</span>
+      <span class="problem-chip"><span class="lc">LC 51</span>N-Queens</span>
+    </div>
+  </div>
+
+  <div class="callout warn" style="margin-top: 14px; font-size: 13px;">
+    <strong>Path-dependence trap.</strong> The <code>path</code> argument is path-dependent state — different histories produce different paths. That means memoization on state alone doesn't work for collecting paths. You can memoize <em>partial answers</em> (e.g., LC 140 memoizes "all decompositions of suffix from i"), but it's not free.
+  </div>
+</div>
+
+<!-- Shape E -->
+<div class="shape-card">
+  <div class="shape-header">
+    <span class="shape-tag e">Shape E</span>
+    <span class="shape-title">Single optimum — find the best value</span>
+  </div>
+  <p class="shape-summary">Track a running best. Prune branches that can't beat it. Often becomes top-down DP if state is path-independent.</p>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton</div>
+<pre>best = <span class="builtin">float</span>(<span class="str">'inf'</span>)
+
+<span class="kw">def</span> <span class="fn">dfs</span>(state, cost):
+<span class="kw">    nonlocal</span> best
+<span class="kw">    if</span> cost >= best: <span class="kw">return</span>   <span class="com"># prune</span>
+<span class="kw">    if</span> is_goal(state):
+        best = <span class="builtin">min</span>(best, cost)
+<span class="kw">        return</span>
+<span class="kw">    for</span> choice <span class="kw">in</span> choices(state):
+        <span class="fn">dfs</span>(next_state(state, choice),
+            cost + cost_of(choice))</pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Example problems</div>
+    <div class="problem-list">
+      <span class="problem-chip"><span class="lc">LC 638</span>Shopping Offers</span>
+      <span class="problem-chip"><span class="lc">LC 64</span>Minimum Path Sum</span>
+      <span class="problem-chip"><span class="lc">LC 322</span>Coin Change (min coins)</span>
+      <span class="problem-chip"><span class="lc">LC 787</span>Cheapest Flights Within K Stops</span>
+      <span class="problem-chip"><span class="lc">LC 174</span>Dungeon Game</span>
+    </div>
+  </div>
+</div>
+
+<!-- Shape F -->
+<div class="shape-card">
+  <div class="shape-header">
+    <span class="shape-tag f">Shape F</span>
+    <span class="shape-title">All optima — every solution at the best value</span>
+  </div>
+  <p class="shape-summary">The hardest shape. Track best-so-far AND a result list. When a strictly better solution is found, reset the list. When equal, append. No short-circuit.</p>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton</div>
+<pre>best_cost = <span class="builtin">float</span>(<span class="str">'inf'</span>)
+best_solutions = []
+EPS = <span class="num">1e-6</span>
+
+<span class="kw">def</span> <span class="fn">dfs</span>(state, cost, path):
+<span class="kw">    nonlocal</span> best_cost, best_solutions
+<span class="kw">    if</span> cost > best_cost + EPS: <span class="kw">return</span>   <span class="com"># prune</span>
+<span class="kw">    if</span> is_goal(state):
+<span class="kw">        if</span> cost < best_cost - EPS:
+            best_cost = cost
+            best_solutions = [path[:]]   <span class="com"># reset</span>
+<span class="kw">        elif</span> <span class="builtin">abs</span>(cost - best_cost) < EPS:
+            best_solutions.append(path[:])
+<span class="kw">        return</span>
+<span class="kw">    for</span> choice <span class="kw">in</span> choices(state):
+        path.append(choice)
+        <span class="fn">dfs</span>(next_state(state, choice),
+            cost + cost_of(choice), path)
+        path.pop()</pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Example problems</div>
+    <div class="problem-list">
+      <span class="problem-chip">The menu problem</span>
+      <span class="problem-chip"><span class="lc">LC 126</span>Word Ladder II</span>
+      <span class="problem-chip">All shortest paths in a weighted graph</span>
+      <span class="problem-chip">All maximum-profit job schedules</span>
+    </div>
+  </div>
+
+  <div class="callout warn" style="margin-top: 14px; font-size: 13px;">
+    <strong>Three pitfalls:</strong> (1) Using <code>&lt;=</code> instead of strict <code>&lt;</code> when checking "strictly better" — clobbers the equal-cost results. (2) Forgetting epsilon for floats. (3) Trying to memoize naively — but the path is path-dependent, so memoizing doesn't trivially work. LC 126 uses a clever BFS-then-DFS hybrid to manage this.
+  </div>
+</div>
+
+</section>
+
+<!-- =================== MENU VS LC 638 =================== -->
+<section class="tab-panel" id="tab-compare">
+
+<p>The menu problem and LC 638 Shopping Offers look like the same problem. They're not. Walking the three flowchart questions on each shows where they diverge.</p>
+
+<div class="compare-grid">
+  <div class="compare-panel menu">
+    <div class="compare-header">Menu problem</div>
+    <div class="compare-body">
+      <p><strong>Q1.</strong> Implicit — choosing entries → backtracking.</p>
+      <p><strong>Q2.</strong> All combinations at minimum cost → <strong>Shape F</strong>.</p>
+      <p><strong>Q3.</strong> Path-dependent (which combinations got us here) → no naive memoization. Add cost pruning.</p>
+      <p><strong>Master problem:</strong> Weighted Set Cover. NP-hard.</p>
+    </div>
+  </div>
+
+  <div class="compare-panel lc638">
+    <div class="compare-header">LC 638 Shopping Offers</div>
+    <div class="compare-body">
+      <p><strong>Q1.</strong> Implicit — choosing offers → backtracking.</p>
+      <p><strong>Q2.</strong> Minimum cost only, one number → <strong>Shape E</strong>.</p>
+      <p><strong>Q3.</strong> Path-independent — answer for a given <code>needs</code> tuple is fixed. → Memoize on tuple. Becomes top-down DP.</p>
+      <p><strong>Master problem:</strong> Bounded unbounded-knapsack variant. Polynomial in state space.</p>
+    </div>
+  </div>
+</div>
+
+<h3>Dimension-by-dimension</h3>
+
+<table class="compare-table">
+  <thead>
+    <tr><th>Dimension</th><th>Menu problem</th><th>LC 638</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Multiplicity of items</td>
+      <td class="menu-col">Each wanted item needed <strong>once</strong> (set membership)</td>
+      <td class="lc-col">Each item needed <strong>N times</strong> (count vector)</td>
+    </tr>
+    <tr>
+      <td>State representation</td>
+      <td class="menu-col">Set of remaining items, or bitmask over wants</td>
+      <td class="lc-col">Tuple of remaining counts per item</td>
+    </tr>
+    <tr>
+      <td>State space size</td>
+      <td class="menu-col">2<sup>n</sup> for n wants (≤ 2<sup>20</sup>)</td>
+      <td class="lc-col">∏ (needs[i] + 1) (≤ ~117K)</td>
+    </tr>
+    <tr>
+      <td>Entry / offer reuse</td>
+      <td class="menu-col">At most once per entry (binary take/skip)</td>
+      <td class="lc-col">Unlimited reuse per offer</td>
+    </tr>
+    <tr>
+      <td>Overbuying allowed?</td>
+      <td class="menu-col">Yes — combo extras are ignored</td>
+      <td class="lc-col">No — must match needs exactly</td>
+    </tr>
+    <tr>
+      <td>Output shape</td>
+      <td class="menu-col">All optimal combinations (Shape F)</td>
+      <td class="lc-col">Minimum cost only (Shape E)</td>
+    </tr>
+    <tr>
+      <td>Memoization</td>
+      <td class="menu-col">Not naively — path-dependent</td>
+      <td class="lc-col">Yes — memoize on remaining-counts tuple</td>
+    </tr>
+    <tr>
+      <td>Price type</td>
+      <td class="menu-col">Floats (need epsilon)</td>
+      <td class="lc-col">Integers (clean comparisons)</td>
+    </tr>
+    <tr>
+      <td>Master problem</td>
+      <td class="menu-col">Weighted Set Cover (NP-hard)</td>
+      <td class="lc-col">Bounded unbounded-knapsack variant</td>
+    </tr>
+    <tr>
+      <td>Difficulty</td>
+      <td class="menu-col">Hard (Shape F + epsilon + set cover)</td>
+      <td class="lc-col">Medium</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>The lesson:</strong> Similar-looking problems can diverge sharply when you walk the flowchart. The set-vs-multiset distinction (Q3 on state) and the single-vs-all-optima distinction (Q2 on output) each independently change the algorithm. Together, they make the menu problem a different beast from LC 638 despite their surface resemblance.
+</div>
+
+</section>
+
+<!-- =================== QUICK REFERENCE =================== -->
+<section class="tab-panel" id="tab-quickref">
+
+<p>For rapid pattern-matching during practice. When you see a problem, scan these and find the closest fit.</p>
+
+<h3>By output keyword</h3>
+
+<div class="quickref">
+  <div class="quickref-card">
+    <p class="qr-title"><span class="qr-tag" style="color: var(--green);">A</span>"is there", "can we", "does"</p>
+    <p class="qr-desc">Boolean. Short-circuit on first success. Return up the stack.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title"><span class="qr-tag" style="color: var(--teal);">B</span>"how many ways", "number of"</p>
+    <p class="qr-desc">Count. Sum from subtrees. Strong memoization candidate.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title"><span class="qr-tag" style="color: var(--accent);">C</span>"find a", "find any"</p>
+    <p class="qr-desc">One example. Carry path, return it on success.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title"><span class="qr-tag" style="color: var(--purple);">D</span>"find all", "return all", "list all"</p>
+    <p class="qr-desc">All solutions. Outer accumulator. No short-circuit.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title"><span class="qr-tag" style="color: var(--amber);">E</span>"minimum", "maximum", "best"</p>
+    <p class="qr-desc">Single optimum. Running best + prune.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title"><span class="qr-tag" style="color: var(--coral);">F</span>"all minimum", "all shortest", "every optimal"</p>
+    <p class="qr-desc">All optima. Running best + reset-on-better, append-on-equal.</p>
+  </div>
+</div>
+
+<h3>By input shape</h3>
+
+<div class="quickref">
+  <div class="quickref-card">
+    <p class="qr-title">Grid / matrix</p>
+    <p class="qr-desc">Explicit. DFS through cells. Common: islands, paths, flood fill.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title">Tree / linked structure</p>
+    <p class="qr-desc">Explicit. Recurse on children. Common: path sums, tree validations.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title">Adjacency list / graph</p>
+    <p class="qr-desc">Explicit. Track visited. Common: connectivity, cycles, topo sort.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title">Array of items to choose from</p>
+    <p class="qr-desc">Implicit. Backtracking with take/skip. Common: subsets, combinations.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title">String to partition / decode</p>
+    <p class="qr-desc">Implicit. Position-based recursion on suffixes. Memoization usually wins.</p>
+  </div>
+  <div class="quickref-card">
+    <p class="qr-title">Board / grid to fill</p>
+    <p class="qr-desc">Implicit. Position-based with constraint checks. N-Queens / Sudoku family.</p>
+  </div>
+</div>
+
+<h3>Drills to internalize this</h3>
+
+<div class="callout tip">
+  <strong>Drill 1.</strong> For every DFS problem you solve, label it: which shape (A-F), which structure (explicit/implicit), what's the state, is it path-independent. Write the label as a comment at the top of your solution.
+</div>
+
+<div class="callout tip">
+  <strong>Drill 2.</strong> Before reading a solution to a new problem, predict the shape and write the skeleton. Then compare to the actual solution. Track where your predictions are wrong.
+</div>
+
+<div class="callout tip">
+  <strong>Drill 3.</strong> After 30-50 problems, build your own pattern catalog. One line per problem: <em>"Subsets — implicit, Shape D, state is (index, path), no memo, no prune."</em> The catalog is more useful than any external resource because it's in your own framing.
+</div>
+
+<hr class="sep">
+
+<p style="text-align: center; color: var(--text-faint); font-size: 13px;">
+  Pattern recognition compounds. Volume + labelling + reflection > memorization.
+</p>
+
+</section>
+
+<script>
+  const tabs = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.tab-panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + target).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>
