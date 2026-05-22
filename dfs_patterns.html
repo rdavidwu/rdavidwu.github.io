@@ -495,6 +495,80 @@
     border-top: 0.5px solid var(--border);
     margin: 2rem 0;
   }
+
+  /* Carry-down vs return-up */
+  .flow-overview {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin: 1rem 0 2rem;
+  }
+
+  .flow-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 1rem 0;
+  }
+
+  @media (max-width: 850px) {
+    .flow-pair { grid-template-columns: 1fr; }
+  }
+
+  .flow-box {
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .flow-box.down { background: var(--amber-bg); }
+  .flow-box.up { background: var(--teal-bg); }
+
+  .flow-box-title {
+    font-weight: 500;
+    font-size: 14px;
+    margin: 0 0 8px;
+  }
+
+  .flow-box.down .flow-box-title { color: var(--amber); }
+  .flow-box.up .flow-box-title { color: var(--teal); }
+
+  .flow-box p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 6px;
+  }
+
+  .flow-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 5px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .flow-badge.down { background: var(--amber-bg); color: var(--amber); }
+  .flow-badge.up { background: var(--teal-bg); color: var(--teal); }
+  .flow-badge.both { background: var(--purple-bg); color: var(--purple); }
+
+  .flow-row {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: var(--surface);
+    border-radius: 6px;
+  }
+
+  .flow-row .lbl {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    font-weight: 500;
+    margin-right: 6px;
+  }
 </style>
 </head>
 <body>
@@ -509,6 +583,7 @@
   <button class="tab-btn" data-tab="explicit-implicit">Explicit vs implicit</button>
   <button class="tab-btn" data-tab="branching">Branching styles</button>
   <button class="tab-btn" data-tab="shapes">The 6 shapes</button>
+  <button class="tab-btn" data-tab="compare">Menu vs LC 638</button>
   <button class="tab-btn" data-tab="quickref">Quick reference</button>
 </div>
 
@@ -878,6 +953,45 @@
 
 <p>Once you know whether you're traversing explicit or implicit structure, the output shape determines your code skeleton. These six cover almost everything.</p>
 
+<div class="flow-overview">
+  <h3 style="margin-top: 0;">First: which way does information flow?</h3>
+  <p style="font-size: 14px; margin-bottom: 4px;">Before the shapes, one cross-cutting decision shapes every skeleton below — and it's the single biggest lever on whether you can memoize. Two ways to structure any recursion:</p>
+
+  <div class="flow-pair">
+    <div class="flow-box down">
+      <p class="flow-box-title">Carry-down (accumulate in arguments)</p>
+      <p>Pass the running cost / path / state <em>down</em> as arguments. The leaf has the full picture and reports to an external variable. Function returns nothing.</p>
+      <p><strong>Memoization:</strong> usually impossible — the carried accumulator is path-dependent, so the same position with different accumulators are different calls. You lean on <em>pruning</em> instead.</p>
+    </div>
+    <div class="flow-box up">
+      <p class="flow-box-title">Return-up (combine child results)</p>
+      <p>Pass only position down. Each node computes its answer from its children's <em>returned</em> values and returns that upward. Computes the "best from here forward."</p>
+      <p><strong>Memoization:</strong> usually works — the return value depends only on the arguments, so <code>@cache</code> collapses the tree to polynomial. This is top-down DP.</p>
+    </div>
+  </div>
+
+  <p style="font-size: 13.5px;"><strong>The rule:</strong> if the answer for a subproblem depends only on "where you are" and not "how you got there," write return-up and memoize. If the partial path genuinely affects validity or cost, you're forced into carry-down + pruning.</p>
+
+  <div class="flow-row">
+    <span class="lbl">Worked example</span>
+    LC 1235 Job Scheduling is return-up: <code>dfs(i)</code> returns "max profit from job i onward," depends only on <code>i</code>, memoizes to O(n log n). Forced into carry-down (passing <code>profit_so_far</code> down), it can't memoize and TLEs at n=5×10⁴. Same problem, same shape — only the flow direction makes it tractable.
+  </div>
+
+  <div style="margin-top: 14px;">
+    <div class="flow-row"><span class="lbl">tendency by shape</span>
+    <span style="color: var(--text);">
+      A boolean → <span class="flow-badge up">return-up</span>
+      &nbsp; B count → <span class="flow-badge up">return-up</span>
+      &nbsp; C one example → <span class="flow-badge down">carry-down</span>
+      &nbsp; D all solutions → <span class="flow-badge down">carry-down</span>
+      &nbsp; E optimum → <span class="flow-badge both">either*</span>
+      &nbsp; F all optima → <span class="flow-badge down">carry-down</span>
+    </span>
+    </div>
+    <p style="font-size: 12.5px; color: var(--text-faint); margin: 8px 0 0;">*Shape E is the one that genuinely goes both ways: return-up when state is path-independent (memoizes → DP), carry-down when it isn't (prune instead). Each card below notes its default.</p>
+  </div>
+</div>
+
 <!-- Shape A -->
 <div class="shape-card">
   <div class="shape-header">
@@ -885,6 +999,7 @@
     <span class="shape-title">Boolean — does it exist?</span>
   </div>
   <p class="shape-summary">Return <code>True</code> as soon as any branch finds a valid solution. Short-circuits the entire search.</p>
+  <div class="flow-row"><span class="lbl">flow</span><span class="flow-badge up">return-up</span> &nbsp;Each node returns a boolean built from <code>any(dfs(child))</code>. Depends only on position → memoizable.</div>
 
   <div class="shape-section">
     <div class="shape-section-label">Skeleton</div>
@@ -916,6 +1031,7 @@
     <span class="shape-title">Count — how many?</span>
   </div>
   <p class="shape-summary">Accumulate a count from subtrees. Each branch contributes a number; sum them up. No short-circuit.</p>
+  <div class="flow-row"><span class="lbl">flow</span><span class="flow-badge up">return-up</span> &nbsp;Each node returns <code>sum(dfs(child))</code>. The count from a state is path-independent → strong memoization candidate.</div>
 
   <div class="shape-section">
     <div class="shape-section-label">Skeleton</div>
@@ -951,6 +1067,7 @@
     <span class="shape-title">One example — find any solution</span>
   </div>
   <p class="shape-summary">Carry the path/state with you. When you hit a goal, return it. First success bubbles up; failure tries the next branch.</p>
+  <div class="flow-row"><span class="lbl">flow</span><span class="flow-badge down">carry-down</span> &nbsp;You build a concrete path downward, then return it on success. The path is path-dependent, so this is hard to memoize.</div>
 
   <div class="shape-section">
     <div class="shape-section-label">Skeleton</div>
@@ -984,6 +1101,7 @@
     <span class="shape-title">All solutions — enumerate every valid</span>
   </div>
   <p class="shape-summary">No short-circuit. Append every successful path to an outer result list. Exhaust the entire search space.</p>
+  <div class="flow-row"><span class="lbl">flow</span><span class="flow-badge down">carry-down</span> &nbsp;Build <code>path</code> downward, append to an external <code>results</code> list at the leaf. Concrete paths are path-dependent → no naive memoization.</div>
 
   <div class="shape-section">
     <div class="shape-section-label">Skeleton</div>
@@ -1025,9 +1143,10 @@
     <span class="shape-title">Single optimum — find the best value</span>
   </div>
   <p class="shape-summary">Track a running best. Prune branches that can't beat it. Often becomes top-down DP if state is path-independent.</p>
+  <div class="flow-row"><span class="lbl">flow</span><span class="flow-badge both">either</span> &nbsp;<strong>Return-up</strong> when the best-from-here depends only on position (memoize → DP, like LC 1235). <strong>Carry-down</strong> when the partial path affects validity/cost (prune instead, like N-Queens cost variants). The skeleton below shows carry-down; the second skeleton shows return-up.</div>
 
   <div class="shape-section">
-    <div class="shape-section-label">Skeleton</div>
+    <div class="shape-section-label">Skeleton — carry-down (prune, no memo)</div>
 <pre>best = <span class="builtin">float</span>(<span class="str">'inf'</span>)
 
 <span class="kw">def</span> <span class="fn">dfs</span>(state, cost):
@@ -1039,6 +1158,19 @@
 <span class="kw">    for</span> choice <span class="kw">in</span> choices(state):
         <span class="fn">dfs</span>(next_state(state, choice),
             cost + cost_of(choice))</pre>
+  </div>
+
+  <div class="shape-section">
+    <div class="shape-section-label">Skeleton — return-up (memoize → DP)</div>
+<pre><span class="kw">from</span> functools <span class="kw">import</span> cache
+
+<span class="builtin">@cache</span>
+<span class="kw">def</span> <span class="fn">dfs</span>(i) -> <span class="builtin">int</span>:
+<span class="kw">    if</span> i == n: <span class="kw">return</span> <span class="num">0</span>
+    skip = <span class="fn">dfs</span>(i + <span class="num">1</span>)
+    take = value(i) + <span class="fn">dfs</span>(next_valid(i))
+<span class="kw">    return</span> <span class="builtin">max</span>(skip, take)   <span class="com"># answer bubbles up</span></pre>
+    <p style="font-size: 12.5px; color: var(--text-faint); margin: 6px 0 0;">This is the LC 1235 form. Position is the only argument, so <code>@cache</code> works. Prefer this whenever the state is path-independent — it's the default for most interview optimization problems.</p>
   </div>
 
   <div class="shape-section">
@@ -1060,6 +1192,7 @@
     <span class="shape-title">All optima — every solution at the best value</span>
   </div>
   <p class="shape-summary">The hardest shape. Track best-so-far AND a result list. When a strictly better solution is found, reset the list. When equal, append. No short-circuit.</p>
+  <div class="flow-row"><span class="lbl">flow</span><span class="flow-badge down">carry-down</span> &nbsp;Inherits carry-down from Shape D (you collect concrete paths) plus an external best from Shape E. Path-dependent on both counts → memoization doesn't trivially apply. The menu problem lives here.</div>
 
   <div class="shape-section">
     <div class="shape-section-label">Skeleton</div>
@@ -1101,6 +1234,98 @@ EPS = <span class="num">1e-6</span>
 
 </section>
 
+<!-- =================== MENU VS LC 638 =================== -->
+<section class="tab-panel" id="tab-compare">
+
+<p>The menu problem and LC 638 Shopping Offers look like the same problem. They're not. Walking the three flowchart questions on each shows where they diverge.</p>
+
+<div class="compare-grid">
+  <div class="compare-panel menu">
+    <div class="compare-header">Menu problem</div>
+    <div class="compare-body">
+      <p><strong>Q1.</strong> Implicit — choosing entries → backtracking.</p>
+      <p><strong>Q2.</strong> All combinations at minimum cost → <strong>Shape F</strong>.</p>
+      <p><strong>Q3.</strong> Path-dependent (which combinations got us here) → no naive memoization. Add cost pruning.</p>
+      <p><strong>Master problem:</strong> Weighted Set Cover. NP-hard.</p>
+    </div>
+  </div>
+
+  <div class="compare-panel lc638">
+    <div class="compare-header">LC 638 Shopping Offers</div>
+    <div class="compare-body">
+      <p><strong>Q1.</strong> Implicit — choosing offers → backtracking.</p>
+      <p><strong>Q2.</strong> Minimum cost only, one number → <strong>Shape E</strong>.</p>
+      <p><strong>Q3.</strong> Path-independent — answer for a given <code>needs</code> tuple is fixed. → Memoize on tuple. Becomes top-down DP.</p>
+      <p><strong>Master problem:</strong> Bounded unbounded-knapsack variant. Polynomial in state space.</p>
+    </div>
+  </div>
+</div>
+
+<h3>Dimension-by-dimension</h3>
+
+<table class="compare-table">
+  <thead>
+    <tr><th>Dimension</th><th>Menu problem</th><th>LC 638</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Multiplicity of items</td>
+      <td class="menu-col">Each wanted item needed <strong>once</strong> (set membership)</td>
+      <td class="lc-col">Each item needed <strong>N times</strong> (count vector)</td>
+    </tr>
+    <tr>
+      <td>State representation</td>
+      <td class="menu-col">Set of remaining items, or bitmask over wants</td>
+      <td class="lc-col">Tuple of remaining counts per item</td>
+    </tr>
+    <tr>
+      <td>State space size</td>
+      <td class="menu-col">2<sup>n</sup> for n wants (≤ 2<sup>20</sup>)</td>
+      <td class="lc-col">∏ (needs[i] + 1) (≤ ~117K)</td>
+    </tr>
+    <tr>
+      <td>Entry / offer reuse</td>
+      <td class="menu-col">At most once per entry (binary take/skip)</td>
+      <td class="lc-col">Unlimited reuse per offer</td>
+    </tr>
+    <tr>
+      <td>Overbuying allowed?</td>
+      <td class="menu-col">Yes — combo extras are ignored</td>
+      <td class="lc-col">No — must match needs exactly</td>
+    </tr>
+    <tr>
+      <td>Output shape</td>
+      <td class="menu-col">All optimal combinations (Shape F)</td>
+      <td class="lc-col">Minimum cost only (Shape E)</td>
+    </tr>
+    <tr>
+      <td>Memoization</td>
+      <td class="menu-col">Not naively — path-dependent</td>
+      <td class="lc-col">Yes — memoize on remaining-counts tuple</td>
+    </tr>
+    <tr>
+      <td>Price type</td>
+      <td class="menu-col">Floats (need epsilon)</td>
+      <td class="lc-col">Integers (clean comparisons)</td>
+    </tr>
+    <tr>
+      <td>Master problem</td>
+      <td class="menu-col">Weighted Set Cover (NP-hard)</td>
+      <td class="lc-col">Bounded unbounded-knapsack variant</td>
+    </tr>
+    <tr>
+      <td>Difficulty</td>
+      <td class="menu-col">Hard (Shape F + epsilon + set cover)</td>
+      <td class="lc-col">Medium</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>The lesson:</strong> Similar-looking problems can diverge sharply when you walk the flowchart. The set-vs-multiset distinction (Q3 on state) and the single-vs-all-optima distinction (Q2 on output) each independently change the algorithm. Together, they make the menu problem a different beast from LC 638 despite their surface resemblance.
+</div>
+
+</section>
 
 <!-- =================== QUICK REFERENCE =================== -->
 <section class="tab-panel" id="tab-quickref">
